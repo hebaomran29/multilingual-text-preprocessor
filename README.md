@@ -86,27 +86,6 @@ uvicorn src.main:app --reload --port 8000
 
 ---
 
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/hebaomran29/multilingual-text-preprocessor.git
-cd multilingual-text-preprocessor
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-python -m spacy download en_core_web_sm
-```
-
-3. Run the application:
-```bash
-uvicorn src.main:app --reload
-```
-
----
-
 ## Usage
 
 ### Web GUI
@@ -174,68 +153,6 @@ multilingual-text-preprocessor/
 ├── README.md                   # This file
 └── .dockerignore               # Docker build exclusions
 ```
-
----
-
-## Configuration
-
-The preprocessing pipeline is configurable via JSON. Create a `config.json` file to customize the pipeline:
-
-```json
-{
-  "english": {
-    "tokenize": true,
-    "remove_stopwords": true,
-    "stemming": true,
-    "lemmatization": false
-  },
-  "arabic": {
-    "remove_diacritics": true,
-    "normalize": true,
-    "remove_stopwords": true,
-    "stemming": true
-  }
-}
-```
-
-See `src/config/` directory for detailed configuration options.
-
----
-
-## API Documentation
-
-### Endpoints
-
-#### POST `/api/preprocess`
-Preprocess text in English or Arabic.
-
-**Request Body:**
-```json
-{
-  "text": "Your text here",
-  "language": "english|arabic",
-  "remove_stopwords": true,
-  "normalize": true,
-  "stemming": true
-}
-```
-
-**Response:**
-```json
-{
-  "original_text": "...",
-  "processed_text": "...",
-  "language": "..."
-}
-```
-
-**Status Codes:**
-- `200` - Success
-- `400` - Bad request
-- `422` - Validation error
-
-For interactive API documentation, visit: http://localhost:8000/docs
-
 ---
 
 ## Contributing
@@ -250,19 +167,12 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
 ## Author
 
 **Heba Omran**
 
 - GitHub: https://github.com/hebaomran
 - Docker Hub: https://hub.docker.com/r/hebaomran
-- Email: [your email]
 
 ---
 
