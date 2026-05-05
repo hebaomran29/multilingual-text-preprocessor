@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Multilingual Text Preprocessor</title>
+  <style>
+    /* ── Reset & base ───────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f8f7f4;
+      --surface:   #ffffff;
+      --border:    rgba(0,0,0,0.10);
+      --border-md: rgba(0,0,0,0.18);
+      --text:      #1a1a1a;
+      --muted:     #6b6b6b;
+      --purple:    #7F77DD;
+      --purple-bg: #EEEDFE;
+      --purple-dk: #3C3489;
+      --teal:      #1D9E75;
+      --teal-bg:   #E1F5EE;
+      --teal-dk:   #085041;
+      --red:       #A32D2D;
+      --red-bg:    #FCEBEB;
+      --radius:    10px;
+      --radius-lg: 14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:        #1c1c1e;
+        --surface:   #2c2c2e;
+        --border:    rgba(255,255,255,0.10);
+        --border-md: rgba(255,255,255,0.20);
+        --text:      #f0f0f0;
+        --muted:     #a0a0a0;
+        --purple-bg: #26215C;
+        --purple-dk: #CECBF6;
+        --teal-bg:   #04342C;
+        --teal-dk:   #9FE1CB;
+        --red-bg:    #501313;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    /* ── Layout ─────────────────────────────────── */
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* ── Header ─────────────────────────────────── */
+    .header { margin-bottom: 2rem; }
+    .header h1 {
+      font-size: 24px; font-weight: 600;
+      color: var(--text); margin-bottom: 4px;
+    }
+    .header p { font-size: 14px; color: var(--muted); }
+
+    /* ── Language switcher ──────────────────────── */
+    .lang-row { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+    .lang-btn {
+      padding: 8px 22px;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border-md);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 14px; cursor: pointer;
+      transition: all .15s;
+    }
+    .lang-btn:hover { border-color: var(--purple); color: var(--purple); }
+    .lang-btn.active {
+      background: var(--purple-bg);
+      border-color: var(--purple);
+      color: var(--purple-dk);
+      font-weight: 500;
+    }
+
+    /* ── Text panels ─────────────────────────────── */
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    @media(max-width:600px){ .panels { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+    }
+    .panel-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em;
+      margin-bottom: 8px;
+    }
+    textarea {
+      width: 100%; height: 130px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 14px; line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      resize: vertical;
+      font-family: inherit;
+      transition: border-color .15s;
+    }
+    textarea:focus { outline: none; border-color: var(--purple); }
+    textarea[dir="rtl"] { font-size: 15px; }
+
+    /* ── Result box ──────────────────────────────── */
+    .result-box {
+      min-height: 130px;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 14px; line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .result-placeholder { color: var(--muted); font-style: italic; }
+
+    /* ── Tokens ──────────────────────────────────── */
+    .tokens-row {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+    }
+    .token {
+      padding: 3px 11px;
+      background: var(--teal-bg);
+      color: var(--teal-dk);
+      border-radius: 20px;
+      font-size: 12px;
+      border: 0.5px solid var(--teal);
+    }
+
+    /* ── Options panel ───────────────────────────── */
+    .options {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .options-title {
+      font-size: 14px; font-weight: 500;
+      color: var(--text); margin-bottom: 12px;
+    }
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+    }
+    .check-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .check-item:hover { border-color: var(--purple); }
+    .check-item input[type="checkbox"] {
+      accent-color: var(--purple);
+      width: 15px; height: 15px; cursor: pointer;
+    }
+    .check-item label {
+      font-size: 13px; color: var(--text); cursor: pointer;
+    }
+
+    /* ── Run button ──────────────────────────────── */
+    .run-btn {
+      width: 100%; padding: 12px;
+      background: var(--purple);
+      color: #fff;
+      border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 500;
+      cursor: pointer; margin-bottom: 1rem;
+      transition: opacity .15s, transform .1s;
+    }
+    .run-btn:hover  { opacity: .88; }
+    .run-btn:active { transform: scale(.99); }
+    .run-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Pipeline steps ──────────────────────────── */
+    .pipeline {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: .75rem 1rem;
+      display: flex; flex-wrap: wrap;
+      align-items: center; gap: 6px;
+      margin-bottom: 1rem;
+      min-height: 44px;
+    }
+    .pipeline-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em;
+      margin-right: 4px;
+    }
+    .step-pill {
+      padding: 3px 11px;
+      background: var(--purple-bg);
+      color: var(--purple-dk);
+      border-radius: 20px; font-size: 12px;
+      border: 0.5px solid var(--purple);
+    }
+    .step-arrow { font-size: 12px; color: var(--muted); }
+
+    /* ── Error / status ──────────────────────────── */
+    .error-box {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 0.5px solid var(--red);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 13px; margin-top: 8px;
+      display: none;
+    }
+
+    /* ── Loading spinner ─────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      margin-right: 8px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<!-- <h1>TEST</h1> -->
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Multilingual Text Preprocessor</h1>
+    <p>Clean and normalize English and Arabic text with a configurable pipeline</p>
+  </div>
+
+  <!-- Language switcher -->
+  <div class="lang-row">
+    <button class="lang-btn active" onclick="setLang('english')">English</button>
+    <button class="lang-btn"        onclick="setLang('arabic')">Arabic — عربي</button>
+  </div>
+
+  <!-- Text panels -->
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-label">Original text</div>
+      <textarea id="inputText"
+        placeholder="Type or paste your text here..."></textarea>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Processed result</div>
+      <div class="result-box" id="resultBox">
+        <span class="result-placeholder">Result will appear here...</span>
+      </div>
+      <div class="tokens-row" id="tokensRow"></div>
+    </div>
+  </div>
+
+  <!-- Error box -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Options -->
+  <div class="options">
+    <div class="options-title">Preprocessing options</div>
+
+    <!-- English options -->
+    <div class="checks" id="englishOptions">
+      <div class="check-item">
+        <input type="checkbox" id="lowercase" checked>
+        <label for="lowercase">Lowercase</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="remove_punct" checked>
+        <label for="remove_punct">Remove punctuation</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="remove_stopwords_en" checked>
+        <label for="remove_stopwords_en">Remove stopwords</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="lemmatize" checked>
+        <label for="lemmatize">Lemmatize</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="stemming_en">
+        <label for="stemming_en">Stemming</label>
+      </div>
+    </div>
+
+    <!-- Arabic options -->
+    <div class="checks" id="arabicOptions" style="display:none">
+      <div class="check-item">
+        <input type="checkbox" id="remove_tashkeel" checked>
+        <label for="remove_tashkeel">Remove tashkeel</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="remove_tatweel" checked>
+        <label for="remove_tatweel">Remove tatweel</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="normalize" checked>
+        <label for="normalize">Normalize alef/hamza</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="remove_non_arabic" checked>
+        <label for="remove_non_arabic">Arabic chars only</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="remove_stopwords_ar" checked>
+        <label for="remove_stopwords_ar">Remove stopwords</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="stemming_ar">
+        <label for="stemming_ar">Stemming</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Run button -->
+  <button class="run-btn" id="runBtn" onclick="runPipeline()">
+    Run Pipeline
+  </button>
+
+  <!-- Pipeline steps display -->
+  <div class="pipeline" id="pipelineSteps">
+    <span class="pipeline-label">Steps</span>
+    <span style="font-size:13px;color:var(--muted)">
+      Run the pipeline to see which steps were applied
+    </span>
+  </div>
+
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────
+  let currentLang = "english";
+
+  // ── Language switcher ──────────────────────────────────
+  function setLang(lang) {
+    currentLang = lang;
+
+    // Update button styles
+    document.querySelectorAll(".lang-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.textContent.toLowerCase().includes(lang));
+    });
+
+    // Show/hide option panels
+    document.getElementById("englishOptions").style.display =
+      lang === "english" ? "grid" : "none";
+    document.getElementById("arabicOptions").style.display =
+      lang === "arabic"  ? "grid" : "none";
+
+    // Set text direction for input
+    const ta = document.getElementById("inputText");
+    ta.dir = lang === "arabic" ? "rtl" : "ltr";
+    ta.placeholder = lang === "arabic"
+      ? "اكتب أو الصق نصك هنا..."
+      : "Type or paste your text here...";
+
+    // Clear previous results
+    clearResults();
+  }
+
+  // ── Clear results ──────────────────────────────────────
+  function clearResults() {
+    document.getElementById("resultBox").innerHTML =
+      '<span class="result-placeholder">Result will appear here...</span>';
+    document.getElementById("tokensRow").innerHTML = "";
+    document.getElementById("errorBox").style.display = "none";
+    document.getElementById("pipelineSteps").innerHTML =
+      '<span class="pipeline-label">Steps</span>' +
+      '<span style="font-size:13px;color:var(--muted)">Run the pipeline to see which steps were applied</span>';
+  }
+
+  // ── Build config from UI state ─────────────────────────
+  function buildConfig() {
+    const text = document.getElementById("inputText").value;
+
+    if (currentLang === "english") {
+      return {
+        text,
+        language:         "english",
+        lowercase:        document.getElementById("lowercase").checked,
+        remove_punct:     document.getElementById("remove_punct").checked,
+        remove_stopwords: document.getElementById("remove_stopwords_en").checked,
+        lemmatize:        document.getElementById("lemmatize").checked,
+        stemming:         document.getElementById("stemming_en").checked,
+      };
+    } else {
+      return {
+        text,
+        language:          "arabic",
+        remove_tashkeel:   document.getElementById("remove_tashkeel").checked,
+        remove_tatweel:    document.getElementById("remove_tatweel").checked,
+        normalize:         document.getElementById("normalize").checked,
+        remove_non_arabic: document.getElementById("remove_non_arabic").checked,
+        remove_stopwords:  document.getElementById("remove_stopwords_ar").checked,
+        stemming:          document.getElementById("stemming_ar").checked,
+      };
+    }
+  }
+
+  // ── Render pipeline steps ──────────────────────────────
+  function renderSteps(steps) {
+    const container = document.getElementById("pipelineSteps");
+    let html = '<span class="pipeline-label">Steps</span>';
+    steps.forEach((step, i) => {
+      html += `<span class="step-pill">${step}</span>`;
+      if (i < steps.length - 1) html += '<span class="step-arrow">›</span>';
+    });
+    container.innerHTML = html;
+  }
+
+  // ── Render tokens ──────────────────────────────────────
+  function renderTokens(tokens) {
+    const row = document.getElementById("tokensRow");
+    row.innerHTML = tokens
+      .map(t => `<span class="token">${t}</span>`)
+      .join("");
+  }
+
+  // ── Show error ─────────────────────────────────────────
+  function showError(msg) {
+    const box = document.getElementById("errorBox");
+    box.textContent = msg;
+    box.style.display = "block";
+    document.getElementById("resultBox").innerHTML =
+      '<span class="result-placeholder">Result will appear here...</span>';
+    document.getElementById("tokensRow").innerHTML = "";
+  }
+
+  // ── Main: call the API ─────────────────────────────────
+  async function runPipeline() {
+    const text = document.getElementById("inputText").value.trim();
+
+    // Client-side empty check
+    if (!text) {
+      showError("Please enter some text before running the pipeline.");
+      return;
+    }
+
+    // Show loading state
+    const btn = document.getElementById("runBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Processing...';
+    document.getElementById("errorBox").style.display = "none";
+
+    try {
+      const config = buildConfig();
+
+      const response = await fetch("/api/preprocess", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(config),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // FastAPI returns { detail: "..." } for HTTP errors
+        showError(data.detail || "An error occurred.");
+        return;
+      }
+
+      // ── Render result ──────────────────────────────────
+      const resultBox = document.getElementById("resultBox");
+      resultBox.textContent = data.result;
+      resultBox.dir = currentLang === "arabic" ? "rtl" : "ltr";
+
+      renderTokens(data.tokens);
+      renderSteps(data.steps_applied);
+
+    } catch (err) {
+      showError("Could not connect to the API. Make sure the server is running.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "Run Pipeline";
+    }
+  }
+
+  // ── Allow Ctrl+Enter to submit ─────────────────────────
+  document.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") runPipeline();
+  });
+</script>
+</body>
+</html>

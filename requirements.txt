@@ -1,0 +1,20 @@
+# Web Framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
+
+# Data Validation
+pydantic==2.7.1
+
+# English NLP — spaCy 3.8+ compatible with newer typer
+spacy==3.8.4
+
+# Arabic NLP
+pyarabic==0.6.15
+
+# NLTK
+nltk==3.8.1
+
+# Utilities
+requests==2.31.0
+aiofiles==23.2.1
